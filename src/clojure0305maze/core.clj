@@ -10,7 +10,8 @@
   ;walls #{#{[2 0] [2 1]} #{[1 1] [1 2]} #{[1 1] [0 1]} #{[0 2] [1 2]} #{[1 1] [2 1]} #{[0 2] [0 1]} #{[1 0] [1 1]} #{[1 0] [2 0]} #{[2 2] [2 1]} #{[0 0] [0 1]} #{[0 0] [1 0]} #{[2 2] [1 2]}}  
   ;(println "map seq --" (map seq walls))
   ;map seq -- (([2 0] [2 1]) ([1 1] [1 2]) ([1 1] [0 1]) ([0 2] [1 2]) ([1 1] [2 1]) ([0 2] [0 1]) ([1 0] [1 1]) ([1 0] [2 0]) ([2 2] [2 1]) ([0 0] [0 1]) ([0 0] [1 0]) ([2 2] [1 2]))  
-  (let [paths (reduce (fn [index [a b]]        ;reduce uvek ima oblik (funkcija)  
+  (let [paths (reduce (fn [index [a b]]        ;reduce uvek ima oblik (funkcija) 
+                                               ;FUNKCIJA  nesto se radi sa ulaznim parametrima
                                                ;{}-oblik izlaza   
                                                ;(map seq walls)-ulazni parametri za reduce
                         (merge-with into index {a [b] b [a]}))  ;merge-with (into je funkcija za merge-with koja ubacuje nove vrednosti u postojece)
@@ -25,17 +26,32 @@
                       {}                ;definise kojeg je oblika izlaz
                       (map seq walls))  ;map pravi list() od seta setova - to su ujedno ulazni parametri za funkciju reduce
         start-loc (rand-nth (keys paths))] ;start-loc je slucajno odabrana lokacija iz lokacija u paths i od nje se krece sa popunjavanjem maze tabele
+    ;KRAJ LET
+    
     ;(println "paths" paths)
     ;u promenjivoj paths su smesteni vectori mogucih kretanja iz odredjenog polja
     ;paths {[0 0] [[0 1] [1 0]], [2 2] [[2 1] [1 2]], [1 0] [[1 1] [2 0] [0 0]], [0 2] [[1 2] [0 1]], [0 1] [[1 1] [0 2] [0 0]], [1 2] [[1 1] [0 2] [2 2]], [1 1] [[1 2] [0 1] [2 1] [1 0]], [2 1] [[2 0] [1 1] [2 2]], [2 0] [[2 1] [1 0]]}    
-    (loop [walls walls
-           unvisited (disj (set (keys paths)) start-loc)]
-      (if-let [loc (when-let [s (seq unvisited)] (rand-nth s))]
-        (let [walk (iterate (comp rand-nth paths) loc)
+    
+    ;LOOP - pocetne vrednosti
+    (loop [new-walls walls                                  ;formiraj promenjivu new-walls sa vrednostima walls
+           unvisited (disj (set (keys paths)) start-loc)]   ;formiraj promenjivu unvisited sa svim mogucim vrednostima osim pocetne
+      ;if-let uslov
+      (if-let [loc (when-let [s (seq unvisited)] (rand-nth s))]   ;u okviru [] za if-let je dodeljivanje vrednosti za loc
+                                                                  ;ako je loc nil onda se ide na false uslov. ako ima nesto ide se na true uslov
+                                                                  ;
+        
+        ;if-let = true
+        (let [walk (iterate (comp rand-nth paths) loc)     ;iterate ((comp rand-nth paths))     sa pocetnom vrednoscu loc
               steps (zipmap (take-while unvisited walk) (next walk))]
-          (recur (reduce disj walls (map set steps))
-                 (reduce disj unvisited (keys steps))))
-        walls))))
+
+          ;rekurzija za LOOP. Izvrsi ovo pa se ponovo vrati na loop tj. promeni neke vrednosti pa ponovo na loop
+          (recur (reduce disj new-walls (map set steps))  ;funkcija disj-disjoin (iz new-walls izbaci sve vrednosti (map set steps))         
+                 (reduce disj unvisited (keys steps))))   ;funkcija disj-disjoin (iz unvisited izbacuje sve steps (korake))
+        
+        ;if-let = false. ujedno i KRAJ izvrsavanja LOOP
+        new-walls))
+    ;kraj LOOP
+    ))
 
 (defn grid
   [w h]
@@ -45,6 +61,7 @@
 
 (defn draw
   [w h maze]
+  (println "maze" w h maze)
   (doto (javax.swing.JFrame. "Maze")
     (.setContentPane
       (doto (proxy [javax.swing.JPanel] []
