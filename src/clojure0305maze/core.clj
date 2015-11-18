@@ -11,7 +11,8 @@
   ;(println "map seq --" (map seq walls))
   ;map seq -- (([2 0] [2 1]) ([1 1] [1 2]) ([1 1] [0 1]) ([0 2] [1 2]) ([1 1] [2 1]) ([0 2] [0 1]) ([1 0] [1 1]) ([1 0] [2 0]) ([2 2] [2 1]) ([0 0] [0 1]) ([0 0] [1 0]) ([2 2] [1 2]))  
   (let [paths (reduce (fn [index [a b]]        ;reduce uvek ima oblik (funkcija) 
-                                               ;FUNKCIJA  nesto se radi sa ulaznim parametrima
+                                               ;FUNKCIJA  nesto se radi sa ulaznim parametrima (samo se u startu definisu ulazni parametri)
+                                               ;parametri se pune u nastavku funkcje
                                                ;{}-oblik izlaza   
                                                ;(map seq walls)-ulazni parametri za reduce
                         (merge-with into index {a [b] b [a]}))  ;merge-with (into je funkcija za merge-with koja ubacuje nove vrednosti u postojece)
@@ -36,13 +37,31 @@
     (loop [new-walls walls                                  ;formiraj promenjivu new-walls sa vrednostima walls
            unvisited (disj (set (keys paths)) start-loc)]   ;formiraj promenjivu unvisited sa svim mogucim vrednostima osim pocetne
       ;if-let uslov
-      (if-let [loc (when-let [s (seq unvisited)] (rand-nth s))]   ;u okviru [] za if-let je dodeljivanje vrednosti za loc
+      (if-let [loc (when-let [s (seq unvisited)] (rand-nth s))]   ;u okviru [loc (when-let [s (seq unvisited)] (rand-nth s))] za if-let je dodeljivanje vrednosti za loc
                                                                   ;ako je loc nil onda se ide na false uslov. ako ima nesto ide se na true uslov
-                                                                  ;
+                                                                  ;when-let u okviru [s (seq unvisited)] je dodeljivanje vrednosti za s
+                                                                  ;ukoliko s postoji izvrsice se komanda (rand-nth s) sa obzirom da when ima samo 
+                                                                  ;true opciju pa ce se ta vrednost dodeliti i promenjivoj loc
+                                                                  ;ukoliko ne postoji s tj. s je nil nece se izvrsiti komanda i s=nil
+                                                                  ;a samim tim je i loc je nil
         
         ;if-let = true
-        (let [walk (iterate (comp rand-nth paths) loc)     ;iterate ((comp rand-nth paths))     sa pocetnom vrednoscu loc
-              steps (zipmap (take-while unvisited walk) (next walk))]
+        (let [walk (take 10 (iterate (comp rand-nth paths) loc))     ;u promenjivu walk smesta slucajno odabranu vrednost iz map-e paths
+                                                                      ;gde je prva vrednost loc
+                                                                      ;i sve to ponavlja beskonacno puta
+              steps (zipmap (take-while unvisited walk) (next walk))] ;take-while: deo slucajnog hoda ali tako da se ne ukljucuju posecene lokacije, vec samo unvisited
+                                                                      ;next walk je beskonacna petlja. ali  (take-while unvisited walk)  nije
+                                                                      ;pa zato zipmap gleda samo prvih n clanova kolekcije (next walk)
+                                                                      ;i pridruzuje vrednosti trenutnog koraka vrednost narednog koraka
+                                                                      ;(pravi parove trnutni korak, naredni korak)
+                                                                      ;steps {[2 2] [2 3], [2 3] [1 3], [3 3] [3 2], [3 0] [3 1], [1 3] [0 3], [0 3] [0 2], [2 0] [3 0], [3 1] [2 1], [2 1] [2 2], [1 2] [2 2], [3 2] [3 1]}
+                                                                      
+          
+          (println "loc" loc)
+          (println "walk" walk)
+          (println "steps" steps)
+          (println "unvisited" unvisited)
+          (println "RRRRRRRRRRRRRRR" (take-while unvisited walk))
 
           ;rekurzija za LOOP. Izvrsi ovo pa se ponovo vrati na loop tj. promeni neke vrednosti pa ponovo na loop
           (recur (reduce disj new-walls (map set steps))  ;funkcija disj-disjoin (iz new-walls izbaci sve vrednosti (map set steps))         
@@ -62,6 +81,8 @@
 (defn draw
   [w h maze]
   (println "maze" w h maze)
+  ;resenje
+  ;maze 60 60 #{#{[1 3] [1 2]} #{[2 0] [2 1]} #{[2 2] [3 2]} #{[0 2] [1 2]} #{[1 1] [2 1]} #{[0 2] [0 1]} #{[1 0] [1 1]} #{[0 0] [0 1]} #{[2 3] [3 3]}}
   (doto (javax.swing.JFrame. "Maze")
     (.setContentPane
       (doto (proxy [javax.swing.JPanel] []
@@ -81,7 +102,7 @@
     .pack
     (.setVisible true)))
 
-(draw 60 60 (maze (grid 3 3)))  ;prvo poziva grid i rezultat prenosi u maze
+(draw 60 60 (maze (grid 4 4)))  ;prvo poziva grid i rezultat prenosi u maze
 
 
 
